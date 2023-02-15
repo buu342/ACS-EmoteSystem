@@ -1,7 +1,7 @@
 #library "emsysdef"
 #include "zcommon.acs"
 
-Script "DoomEmotes_InitializeEmotesDefault" ENTER CLIENTSIDE
+Script "DoomEmotes_InitializeEmotesDefault" OPEN CLIENTSIDE
 {
 	ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_ThumbsUp", "EMTUA0", "Emote/ThumbsUp");
 	ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Blush", "EMBLA0", "Emote/Blush");

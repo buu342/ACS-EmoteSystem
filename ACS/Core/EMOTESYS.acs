@@ -67,7 +67,7 @@ int PlayerEmote_SpamPunishTime[MAXPLAYERS];
                                            Initialization
 ===================================================================================================*/
 
-Script "DoomEmotes_InitializeEmotes" ENTER CLIENTSIDE
+Script "DoomEmotes_InitializeEmotes" OPEN CLIENTSIDE
 {
 	for (int i=0; i<9; i++)
 	{
@@ -84,9 +84,9 @@ Script "DoomEmotes_RegisterEmote" (int class, int sprite, int sound)
 	Emotes_RegisteredCount++;
 }
 
-Script "DoomEmotes_InitializeWheel" ENTER CLIENTSIDE
+Script "DoomEmotes_InitializeWheel" OPEN CLIENTSIDE
 {
-	// Wait for all ENTER scripts to execute first 
+	// Wait for all OPEN scripts to execute first 
 	Delay(5);
 	
 	// Register all 9 emote wheel slots
@@ -125,7 +125,7 @@ Script 30735 (void) NET CLIENTSIDE
     int dy;
 	
 	// Don't let the user open the emote wheel if the menu is open
-	if (EmoteMenu_Open)
+	if (EmoteMenu_Open || PlayerIsSpectator(ConsolePlayerNumber()))
 		terminate;
 	
 	// Initialize the wheel
