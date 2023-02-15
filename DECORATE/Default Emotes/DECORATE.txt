@@ -5,7 +5,7 @@ ACTOR Emote_Angry : EmoteBase
 		Spawn:
 			EMAG A 1 Bright
 			EMAG AAAAAAA 1 Bright A_ChangeVelocity(0, 0, -1, CVF_RELATIVE)
-			EMAG A 10 Bright
+			EMAG A 10 Bright A_ChangeVelocity(0, 0, 0, CVF_REPLACE)
 			EMAG AAAAAAAAAA 1 Bright A_FadeOut(0.1)
 			Stop
 	}
@@ -18,7 +18,7 @@ ACTOR Emote_Blush : EmoteBase
 		Spawn:
 			EMBL A 1 Bright
 			EMBL AAAAAAA 1 Bright A_ChangeVelocity(0, 0, -1, CVF_RELATIVE)
-			EMBL A 10 Bright
+			EMBL A 10 Bright A_ChangeVelocity(0, 0, 0, CVF_REPLACE)
 			EMBL AAAAAAAAAA 1 Bright A_FadeOut(0.1)
 			Stop
 	}
@@ -31,7 +31,7 @@ ACTOR Emote_EyeBrow : EmoteBase
 		Spawn:
 			EMEB A 1 Bright
 			EMEB AAAAAAA 1 Bright A_ChangeVelocity(0, 0, -1, CVF_RELATIVE)
-			EMEB A 10 Bright
+			EMEB A 10 Bright A_ChangeVelocity(0, 0, 0, CVF_REPLACE)
 			EMEB AAAAAAAAAA 1 Bright A_FadeOut(0.1)
 			Stop
 	}
@@ -44,7 +44,7 @@ ACTOR Emote_LULZ : EmoteBase
 		Spawn:
 			EMLU A 1 Bright
 			EMLU AAAAAAA 1 Bright A_ChangeVelocity(0, 0, -1, CVF_RELATIVE)
-			EMLU A 10 Bright
+			EMLU A 10 Bright A_ChangeVelocity(0, 0, 0, CVF_REPLACE)
 			EMLU AAAAAAAAAA 1 Bright A_FadeOut(0.1)
 			Stop
 	}
@@ -57,7 +57,7 @@ ACTOR Emote_Pensive : EmoteBase
 		Spawn:
 			EMPN A 1 Bright
 			EMPN AAAAAAA 1 Bright A_ChangeVelocity(0, 0, -1, CVF_RELATIVE)
-			EMPN A 10 Bright
+			EMPN A 10 Bright A_ChangeVelocity(0, 0, 0, CVF_REPLACE)
 			EMPN AAAAAAAAAA 1 Bright A_FadeOut(0.1)
 			Stop
 	}
@@ -70,7 +70,7 @@ ACTOR Emote_Sobbing : EmoteBase
 		Spawn:
 			EMSB A 1 Bright
 			EMSB AAAAAAA 1 Bright A_ChangeVelocity(0, 0, -1, CVF_RELATIVE)
-			EMSB A 10 Bright
+			EMSB A 10 Bright A_ChangeVelocity(0, 0, 0, CVF_REPLACE)
 			EMSB AAAAAAAAAA 1 Bright A_FadeOut(0.1)
 			Stop
 	}
@@ -83,7 +83,7 @@ ACTOR Emote_ThumbsDown : EmoteBase
 		Spawn:
 			EMTD A 1 Bright
 			EMTD AAAAAAA 1 Bright A_ChangeVelocity(0, 0, -1, CVF_RELATIVE)
-			EMTD A 10 Bright
+			EMTD A 10 Bright A_ChangeVelocity(0, 0, 0, CVF_REPLACE)
 			EMTD AAAAAAAAAA 1 Bright A_FadeOut(0.1)
 			Stop
 	}
@@ -96,7 +96,7 @@ ACTOR Emote_ThumbsUp : EmoteBase
 		Spawn:
 			EMTU A 1 Bright
 			EMTU AAAAAAA 1 Bright A_ChangeVelocity(0, 0, -1, CVF_RELATIVE)
-			EMTU A 10 Bright
+			EMTU A 10 Bright A_ChangeVelocity(0, 0, 0, CVF_REPLACE)
 			EMTU AAAAAAAAAA 1 Bright A_FadeOut(0.1)
 			Stop
 	}
@@ -109,7 +109,7 @@ ACTOR Emote_Tongue : EmoteBase
 		Spawn:
 			EMTG A 1 Bright
 			EMTG AAAAAAA 1 Bright A_ChangeVelocity(0, 0, -1, CVF_RELATIVE)
-			EMTG A 10 Bright
+			EMTG A 10 Bright A_ChangeVelocity(0, 0, 0, CVF_REPLACE)
 			EMTG AAAAAAAAAA 1 Bright A_FadeOut(0.1)
 			Stop
 	}
