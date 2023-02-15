@@ -1,0 +1,622 @@
+#library "emotesys"
+#include "zcommon.acs"
+
+// Useful
+#define SECOND 35
+
+// Maximums
+#define MAXPLAYERS 64
+#define MAXEMOTES 100
+
+// HUD scaling
+#define HUDSCALEW 800
+#define HUDSCALEH 600
+#define HUDSCALEW_F 800.0
+#define HUDSCALEH_F 600.0
+
+// Config menu selections
+#define CONFIGSELECT_NONE      -1
+#define CONFIGSELECT_EMOTE1    0
+#define CONFIGSELECT_EMOTE9    8
+#define CONFIGSELECT_NEXTPAGE  9
+#define CONFIGSELECT_PREVPAGE  10
+#define CONFIGSELECT_CHECKBOX1 11
+#define CONFIGSELECT_CHECKBOX2 12
+
+// Message ID's
+#define MSGID_TITLE       380751
+#define MSGID_BACKGROUND  380750
+#define MSGID_PREVARROW   380749
+#define MSGID_NEXTARROW   380748
+#define MSGID_CHECKBOX2   380747
+#define MSGID_CHECKBOX1   380746
+#define MSGID_EMOTESELECT 380745
+#define MSGID_EMOTE1      380744
+#define MSGID_EMOTE2      380743
+#define MSGID_EMOTE3      380742
+#define MSGID_EMOTE4      380741
+#define MSGID_EMOTE5      380740
+#define MSGID_EMOTE6      380739
+#define MSGID_EMOTE7      380738
+#define MSGID_EMOTE8      380737
+#define MSGID_EMOTE9      380736
+#define MSGID_CURSOR      380735
+
+
+/*===================================================================================================
+                                               Globals
+===================================================================================================*/
+
+// Player emote wheel globals (client)
+bool EmoteWheel_Open = false;
+int EmoteWheel_Selection = 0;
+str EmoteWheel_Config[9][3];
+bool EmoteMenu_Open = false;
+
+// Registered emotes globals (client)
+int Emotes_RegisteredCount = 0;
+str Emotes_Registered[MAXEMOTES][3];
+
+// Player emote cooldowns (server)
+int PlayerEmote_EmoteCoolDown[MAXPLAYERS];
+int PlayerEmote_AntiSpam[MAXPLAYERS];
+int PlayerEmote_SpamPunishTime[MAXPLAYERS];
+
+
+/*===================================================================================================
+                                           Initialization
+===================================================================================================*/
+
+Script "DoomEmotes_InitializeEmotes" ENTER CLIENTSIDE
+{
+	for (int i=0; i<9; i++)
+	{
+		EmoteWheel_Config[i][0] = "";
+		Emotes_Registered[i][0] = "";
+	}
+}
+
+Script "DoomEmotes_RegisterEmote" (int class, int sprite, int sound)
+{
+	Emotes_Registered[Emotes_RegisteredCount][0] = class;
+	Emotes_Registered[Emotes_RegisteredCount][1] = sprite;
+	Emotes_Registered[Emotes_RegisteredCount][2] = sound;
+	Emotes_RegisteredCount++;
+}
+
+Script "DoomEmotes_InitializeWheel" ENTER CLIENTSIDE
+{
+	// Wait for all ENTER scripts to execute first 
+	Delay(5);
+	
+	// Register all 9 emote wheel slots
+	for (int i=0; i<9; i++)
+		ACS_NamedExecuteAlways("DoomEmotes_SetWheelEmote", 0, i, GetUserCVarString(0, StrParam(s:"_emotewheel_emote", d:(i+1))));
+}
+
+Script "DoomEmotes_SetWheelEmote" (int slot, int emote)
+{
+	// Find the emote with the given name in the list of registered emotes
+	for (int i=0; i<MAXEMOTES; i++)
+	{
+		if (!StrCmp(emote, Emotes_Registered[i][0]))
+		{
+			// Set the wheel's slot to the requested emote
+			EmoteWheel_Config[slot][0] = Emotes_Registered[i][0];
+			EmoteWheel_Config[slot][1] = Emotes_Registered[i][1];
+			EmoteWheel_Config[slot][2] = Emotes_Registered[i][2];
+		}
+	}
+}
+
+
+/*===================================================================================================
+                                         Emote Wheel Client
+===================================================================================================*/
+
+Script 30735 (void) NET CLIENTSIDE
+{
+	int i;
+	int mouse_x = GetScreenWidth()/2;
+	int mouse_y = GetScreenHeight()/2;
+    int x_sensitivity = 1.0;
+    int y_sensitivity = 1.0;
+    int dx;
+    int dy;
+	
+	// Don't let the user open the emote wheel if the menu is open
+	if (EmoteMenu_Open)
+		terminate;
+	
+	// Initialize the wheel
+	SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN);
+	EmoteWheel_Open = true;
+	EmoteWheel_Selection = 0;
+	
+	// Draw the wheel
+	while (EmoteWheel_Open)
+	{
+		// Handle mouse position on the wheel
+		int mouse_centerx = mouse_x-GetScreenWidth()/2;
+		int mouse_centery = mouse_y-GetScreenHeight()/2;
+		int mouseang = VectorAngle(mouse_centerx << 16, mouse_centery << 16);
+		if (sqrt(mouse_centerx*mouse_centerx + mouse_centery*mouse_centery) > FixedMul(77.0, FixedDiv(GetScreenHeight() << 16, 900.0)) >> 16)
+			EmoteWheel_Selection = (2.0+((2.5+FixedMul(8.0, mouseang))%8.0)) >> 16;
+		else
+			EmoteWheel_Selection = 1;
+		
+		// Set the emote wheel background
+		SetHUDSize(HUDSCALEW, HUDSCALEH, true);
+		SetFont(strparam(s:"EMWHEEL", d:EmoteWheel_Selection));
+		HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_BACKGROUND, CR_WHITE, (HUDSCALEW/2) << 16, (HUDSCALEH/2) << 16, 1, 1);
+		
+		// Draw the available emotes 
+		SetHUDSize(HUDSCALEW*3, HUDSCALEH*3, true);
+		for (i=0; i<9; i++)
+		{
+			if (!StrCmp(EmoteWheel_Config[i][0], ""))
+				continue;
+			int posx = 0, posy = 0;
+			int iang = FixedMul((i-3) << 16, 0.125);
+			SetFont(EmoteWheel_Config[i][1]);
+			if (i != 0)
+			{
+				posx = FixedMul(Cos(iang), 320.0) & 0xFFFF0000;
+				posy = FixedMul(Sin(iang), 320.0) & 0xFFFF0000;
+			}
+			HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_EMOTE1-i, CR_WHITE, (((HUDSCALEW*3)/2) << 16)+60.0+posx, (((HUDSCALEH*3)/2) << 16)+116.0+posy, 1, 1);
+		}
+		
+		// Get input
+		dx = FixedMul(x_sensitivity, GetPlayerInput(0, INPUT_YAW))/24;
+		dy = FixedMul(y_sensitivity, GetPlayerInput(0, INPUT_PITCH))/12;
+		if (dy == 0)
+			dy = -GetPlayerInput(0, INPUT_FORWARDMOVE)/1200;
+
+		// Move the mouse
+		mouse_x -= dx;
+		if (!GetCVar("invertmouse"))
+			mouse_y -= dy;
+		else
+			mouse_y += dy;
+
+		// Prevent the mouse from escaping
+		if (mouse_x < 0)
+			mouse_x = 0;
+		if (mouse_x > GetScreenWidth())
+			mouse_x = GetScreenWidth();
+		if (mouse_y < 0)
+			mouse_y = 0;
+		if (mouse_y > GetScreenHeight())
+			mouse_y = GetScreenHeight();
+		
+		// Draw the mouse cursor
+		SetFont("DOOMCURS");
+		SetHUDSize(GetScreenWidth(), GetScreenHeight(), true);
+		HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_CURSOR, CR_WHITE, (mouse_x << 16)+0.1, (mouse_y << 16)+0.1, 1, 1);
+		
+		// Restart the loop
+		delay(1);
+	}
+	
+	// Reset the messages
+	SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
+	ClearHUDMessages();
+}
+
+Script 30736 (void) NET CLIENTSIDE
+{
+	// Send the selected emote to the server
+	// This is done through a string that contains the playernumber (as a character), and then the emote to send
+	// We need to +1 the PlayerNumber because 0 would terminate the string early
+	if (EmoteWheel_Open && StrCmp(EmoteWheel_Config[EmoteWheel_Selection-1][0], "") != 0)
+		NamedSendNetworkString("DoomEmotes_DoEmote_Server", StrParam(c:(ConsolePlayerNumber()+1), s:EmoteWheel_Config[EmoteWheel_Selection-1][0]));
+	EmoteWheel_Open = false;
+}
+
+
+/*===================================================================================================
+                                          Emote Config Menu
+===================================================================================================*/
+
+Script 30737 (void) NET CLIENTSIDE
+{
+	int i, posx, posy, input, oldinput;
+	int mouse_x = GetScreenWidth()/2;
+	int mouse_y = GetScreenHeight()/2;
+    int x_sensitivity = 1.0;
+    int y_sensitivity = 1.0;
+    int dx;
+    int dy;
+	int menustate = 0;
+	int menupage = 0;
+	int menuselection = CONFIGSELECT_NONE;
+	int emotereplace = 0;
+	
+	// Don't let the user open the emote config menu if the wheel is open
+	if (EmoteWheel_Open)
+		terminate;
+	
+	// Initialize the menu
+	SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN);
+	EmoteMenu_Open = true;
+	
+	// Draw the menu
+	while (EmoteMenu_Open)
+	{
+		bool hasnextpage = ((-1+menupage*9+8) < Emotes_RegisteredCount);
+		bool hasprevpage = (menupage != 0);
+		
+		// Draw different menus based on the menu state
+		if (menustate == 0) // Emote menu selection
+		{
+			int hratio = FixedDiv(GetScreenHeight() << 16, HUDSCALEH_F);
+			int menucoord_top = ((GetScreenHeight()/2) << 16) - FixedMul(158.0 + 16.0, hratio);
+			int menucoord_bot = ((GetScreenHeight()/2) << 16) + FixedMul(158.0 - 16.0, hratio);
+			int menucoord_left = ((GetScreenWidth()/2) << 16) - FixedMul(158.0, hratio);
+			int menucoord_right = ((GetScreenWidth()/2) << 16) + FixedMul(158.0, hratio);
+			int mouse_xf = mouse_x<<16;
+			int mouse_yf = mouse_y<<16;
+			
+			// Handle mouse position on the menu
+			if (mouse_yf > menucoord_top && mouse_yf < menucoord_bot && mouse_xf > menucoord_left && mouse_xf < menucoord_right) // Emote selection
+			{
+				menuselection = (FixedMul(FixedDiv(mouse_yf-menucoord_top, menucoord_bot-menucoord_top), 3.0) >> 16)*3;
+				menuselection += (FixedMul(FixedDiv(mouse_xf-menucoord_left, menucoord_right-menucoord_left), 3.0) >> 16);
+				if ((menuselection + menupage*9) > Emotes_RegisteredCount)
+					menuselection = CONFIGSELECT_NONE;
+			}
+			else if (mouse_xf > menucoord_right && hasnextpage)
+				menuselection = CONFIGSELECT_NEXTPAGE;
+			else if (mouse_xf < menucoord_left && hasprevpage)
+				menuselection = CONFIGSELECT_PREVPAGE;
+			else if (mouse_yf > menucoord_bot && mouse_yf < menucoord_bot+FixedMul(32.0, hratio) && mouse_xf > menucoord_left && mouse_x < GetScreenWidth()/2)
+				menuselection = CONFIGSELECT_CHECKBOX1;
+			else if (mouse_yf > menucoord_bot && mouse_yf < menucoord_bot+FixedMul(32.0, hratio) && mouse_xf < menucoord_right && mouse_x > GetScreenWidth()/2)
+				menuselection = CONFIGSELECT_CHECKBOX2;
+			else
+				menuselection = CONFIGSELECT_NONE;
+			
+			// Set the emote menu background
+			SetHUDSize(HUDSCALEW, HUDSCALEH, true);
+			SetFont("EMCONFIG");
+			HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_BACKGROUND, CR_WHITE, (HUDSCALEW/2) << 16, (HUDSCALEH/2) << 16, 1, 1);
+			
+			// Title
+			SetFont("BIGFONT");
+			HudMessage(s:"EMOTE CONFIGURATION"; HUDMSG_PLAIN, MSGID_TITLE, CR_GOLD, (HUDSCALEW/2) << 16, ((HUDSCALEH/2) << 16) - 174.0 - 16.0, 1, 1);
+			
+			// Draw next/prev page arrows
+			if (hasnextpage)
+			{
+				SetFont("EMNEXT");
+				HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_NEXTARROW, CR_WHITE, ((HUDSCALEW/2)<<16) + 232.0, ((HUDSCALEH/2)<<16) + 20.0, 1, 1);
+			}
+			else
+				HudMessage(s:""; HUDMSG_PLAIN, MSGID_NEXTARROW, CR_WHITE, 0, 0, 0, 0);
+			if (hasprevpage)
+			{
+				SetFont("EMPREV");
+				HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_PREVARROW, CR_WHITE, ((HUDSCALEW/2)<<16) - 172.0, ((HUDSCALEH/2)<<16) + 20.0, 1, 1);
+			}
+			else
+				HudMessage(s:""; HUDMSG_PLAIN, MSGID_PREVARROW, CR_WHITE, 0, 0, 0, 0);
+			
+			// Draw the checkboxes
+			if (!GetCVar("emotesystem_client_disabled"))
+			{
+				SetFont("EMCHCKBX");
+				HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_CHECKBOX1, CR_WHITE, ((HUDSCALEW/2)<<16) - 145.0 + 7.0, ((HUDSCALEH/2)<<16) + 150.0 + 7.0, 1, 1);
+			}
+			else
+				HudMessage(s:""; HUDMSG_PLAIN, MSGID_CHECKBOX1, CR_WHITE, 0, 0, 0, 0);
+			if (!GetCVar("emotesystem_client_disablesounds"))
+			{
+				SetFont("EMCHCKBX");
+				HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_CHECKBOX2, CR_WHITE, ((HUDSCALEW/2)<<16) + 10.0, ((HUDSCALEH/2)<<16) + 150.0 + 7.0, 1, 1);
+			}
+			else
+				HudMessage(s:""; HUDMSG_PLAIN, MSGID_CHECKBOX2, CR_WHITE, 0, 0, 0, 0);
+			
+			// Draw the available emotes
+			for (i=0; i<9; i++)
+			{					
+				// Stop if we're out of emotes
+				if ((-1+i+menupage*9) >= Emotes_RegisteredCount)
+					break;
+					
+				// Calculate the emote position on the grid
+				posx = 0 + FixedMul(207.0, ((i%3)-1) << 16);
+				posy = -29.0 + FixedMul(210.0, ((i/3)-1) << 16);
+				
+				// Draw the emote
+				SetHUDSize(HUDSCALEW*2, HUDSCALEH*2, true);
+				if (i == 0 && menupage == 0)
+					SetFont("EMNONE");
+				else
+					SetFont(Emotes_Registered[-1+i+menupage*9][1]);
+				HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_EMOTE1-i, CR_WHITE, HUDSCALEW_F+60.0+posx, HUDSCALEH_F+116.0+posy, 1, 1);
+			}
+			
+			// Handle the selection highlight
+			if (menuselection >= CONFIGSELECT_EMOTE1 && menuselection <= CONFIGSELECT_EMOTE9)
+			{
+				i = menuselection;
+				SetHUDSize(HUDSCALEW, HUDSCALEH, true);
+				SetFont("EMSELECT");
+				HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_EMOTESELECT, CR_WHITE, ((HUDSCALEW/2)<<16)+50.0+((((i%3)-1)*104)<<16), ((HUDSCALEH/2)<<16)+34.0+((((i/3)-1)*104)<<16), 1, 1);
+			}
+			else
+				HudMessage(s:""; HUDMSG_PLAIN, MSGID_EMOTESELECT, CR_WHITE, 0, 0, 0, 0);
+			
+			// Handle selection clicking
+			input = GetPlayerInput(-1, INPUT_BUTTONS);
+			oldinput = GetPlayerInput(-1, INPUT_OLDBUTTONS);
+			if (!(oldinput & (BT_USE|BT_ATTACK)) && (input & (BT_USE|BT_ATTACK)))
+			{
+				if (menuselection >= CONFIGSELECT_EMOTE1 && menuselection <= CONFIGSELECT_EMOTE9)
+				{
+					menustate = 1;
+					menuselection = -1+menuselection+menupage*9;
+					HudMessage(s:""; HUDMSG_PLAIN, MSGID_PREVARROW, CR_WHITE, 0, 0, 0, 0);
+					HudMessage(s:""; HUDMSG_PLAIN, MSGID_NEXTARROW, CR_WHITE, 0, 0, 0, 0);
+					HudMessage(s:""; HUDMSG_PLAIN, MSGID_CHECKBOX2, CR_WHITE, 0, 0, 0, 0);
+					HudMessage(s:""; HUDMSG_PLAIN, MSGID_CHECKBOX1, CR_WHITE, 0, 0, 0, 0);
+					HudMessage(s:""; HUDMSG_PLAIN, MSGID_EMOTESELECT, CR_WHITE, 0, 0, 0, 0);
+				}
+				else if (menuselection == CONFIGSELECT_NEXTPAGE)
+				{
+					menupage++;
+					for (i=0; i<9; i++)
+						HudMessage(s:""; HUDMSG_PLAIN, MSGID_EMOTE1-i, CR_WHITE, 0, 0, 0, 0);
+				}
+				else if (menuselection == CONFIGSELECT_PREVPAGE)
+				{
+					menupage--;
+					for (i=0; i<9; i++)
+						HudMessage(s:""; HUDMSG_PLAIN, MSGID_EMOTE1-i, CR_WHITE, 0, 0, 0, 0);
+				}
+				else if (menuselection == CONFIGSELECT_CHECKBOX1)
+					SetCVar("emotesystem_client_disabled", !GetCVar("emotesystem_client_disabled"));
+				else if (menuselection == CONFIGSELECT_CHECKBOX2)
+					SetCVar("emotesystem_client_disablesounds", !GetCVar("emotesystem_client_disablesounds"));
+			}
+		}
+		else // Emote wheel placement
+		{
+			// Handle mouse position on the wheel
+			int mouse_centerx = mouse_x-GetScreenWidth()/2;
+			int mouse_centery = mouse_y-GetScreenHeight()/2;
+			int mouseang = VectorAngle(mouse_centerx << 16, mouse_centery << 16);
+			if (sqrt(mouse_centerx*mouse_centerx + mouse_centery*mouse_centery) > FixedMul(77.0, FixedDiv(GetScreenHeight() << 16, 900.0)) >> 16)
+				emotereplace = (2.0+((2.5+FixedMul(8.0, mouseang))%8.0)) >> 16;
+			else
+				emotereplace = 1;
+			
+			// Set the emote wheel background
+			SetHUDSize(HUDSCALEW, HUDSCALEH, true);
+			SetFont(strparam(s:"EMWHEEL", d:emotereplace));
+			HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_BACKGROUND, CR_WHITE, (HUDSCALEW/2) << 16, (HUDSCALEH/2) << 16, 1, 1);
+			
+			// Title
+			SetFont("BIGFONT");
+			HudMessage(s:"SELECT SLOT TO REPLACE"; HUDMSG_PLAIN, MSGID_TITLE, CR_GOLD, (HUDSCALEW/2) << 16, ((HUDSCALEH/2) << 16) - 174.0, 1, 1);
+			
+			// Draw the available emotes 
+			SetHUDSize(HUDSCALEW*3, HUDSCALEH*3, true);
+			for (i=0; i<9; i++)
+			{
+				if (!StrCmp(EmoteWheel_Config[i][0], ""))
+				{
+					HudMessage(s:""; HUDMSG_PLAIN, MSGID_EMOTE1-i, CR_WHITE, 0, 0, 0, 0);
+					continue;
+				}
+				int iang = FixedMul((i-3) << 16, 0.125);
+				posx = 0;
+				posy = 0;
+				SetFont(EmoteWheel_Config[i][1]);
+				if (i != 0)
+				{
+					posx = FixedMul(Cos(iang), 320.0) & 0xFFFF0000;
+					posy = FixedMul(Sin(iang), 320.0) & 0xFFFF0000;
+				}
+				HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_EMOTE1-i, CR_WHITE, (((HUDSCALEW*3)/2) << 16)+60.0+posx, (((HUDSCALEH*3)/2) << 16)+116.0+posy, 1, 1);
+			}
+			
+			// Handle selection
+			input = GetPlayerInput(-1, INPUT_BUTTONS);
+			oldinput = GetPlayerInput(-1, INPUT_OLDBUTTONS);
+			if (!(oldinput & (BT_USE|BT_ATTACK)) && (input & (BT_USE|BT_ATTACK)))
+			{
+				if (menuselection == -1) // Selected the None emote
+				{
+					EmoteWheel_Config[emotereplace-1][0] = "";
+					SetUserCVarString(ConsolePlayerNumber(), StrParam(s:"_emotewheel_emote", d:emotereplace), "");
+				}
+				else
+				{
+					EmoteWheel_Config[emotereplace-1][0] = Emotes_Registered[menuselection][0];
+					EmoteWheel_Config[emotereplace-1][1] = Emotes_Registered[menuselection][1];
+					EmoteWheel_Config[emotereplace-1][2] = Emotes_Registered[menuselection][2];
+					SetUserCVarString(ConsolePlayerNumber(), StrParam(s:"_emotewheel_emote", d:emotereplace), Emotes_Registered[menuselection][0]);
+				}
+				
+				// Redraw the config menu
+				menustate = 0;
+				ClearHUDMessages();
+			}
+		}
+		
+		// Get input
+		dx = FixedMul(x_sensitivity, GetPlayerInput(0, INPUT_YAW))/24;
+		dy = FixedMul(y_sensitivity, GetPlayerInput(0, INPUT_PITCH))/12;
+		if (dy == 0)
+			dy = -GetPlayerInput(0, INPUT_FORWARDMOVE)/1200;
+
+		// Move the mouse
+		mouse_x -= dx;
+		if (!GetCVar("invertmouse"))
+			mouse_y -= dy;
+		else
+			mouse_y += dy;
+
+		// Prevent the mouse from escaping
+		if (mouse_x < 0)
+			mouse_x = 0;
+		if (mouse_x > GetScreenWidth())
+			mouse_x = GetScreenWidth();
+		if (mouse_y < 0)
+			mouse_y = 0;
+		if (mouse_y > GetScreenHeight())
+			mouse_y = GetScreenHeight();
+		
+		// Draw the mouse cursor
+		SetFont("DOOMCURS");
+		SetHUDSize(GetScreenWidth(), GetScreenHeight(), true);
+		HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_CURSOR, CR_WHITE, (mouse_x << 16)+0.1, (mouse_y << 16)+0.1, 1, 1);
+		
+		// Restart the loop
+		delay(1);
+	}
+	
+	// Reset the messages
+	SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
+	ClearHUDMessages();
+}
+
+Script 30738 (void) NET CLIENTSIDE
+{
+	EmoteMenu_Open = false;
+}
+
+
+/*===================================================================================================
+                                           Spam Detection
+===================================================================================================*/
+
+Script "DoomEmotes_SpamDetection" OPEN
+{
+	int i;
+	
+	// Initialize player variables
+	for (i=0; i<MAXPLAYERS; i++)
+		PlayerEmote_AntiSpam[i] = GetCVar("emotesystem_server_spammax");
+		
+	// Run this thread forever
+	while (1)
+	{
+		// If we are not allowed to spam
+		if (GetCVar("emotesystem_server_spammax") > 0)
+		{
+			// Look through all players
+			for (i=0; i<MAXPLAYERS; i++)
+			{
+				// Skip nonexistent players
+				if (!PlayerInGame(i))
+					continue;
+				
+				// Slowly regen their spam count if they haven't been naughty
+				if (PlayerEmote_AntiSpam[i] < GetCVar("emotesystem_server_spammax") && PlayerEmote_SpamPunishTime[i] < Timer())
+				{
+					// Increment if we had a valid cooldown
+					if (PlayerEmote_SpamPunishTime[i] != 0)
+						PlayerEmote_AntiSpam[i]++;
+						
+					// Set the next regen time
+					if (PlayerEmote_AntiSpam[i] < GetCVar("emotesystem_server_spammax"))
+						PlayerEmote_SpamPunishTime[i] = Timer() + (FixedMul(GetCVar("emotesystem_server_spamregentime"), SECOND<<16)>>16);
+					else
+						PlayerEmote_SpamPunishTime[i] = 0;
+				}
+			}
+		}
+		delay(5);
+	}
+}
+
+
+/*===================================================================================================
+                                         Data Communication
+===================================================================================================*/
+
+Script "DoomEmotes_DoEmote_Server" (int packet) NET
+{
+	int plynum = GetChar(packet, 0)-1;
+	
+	// If the player is allowed to emote
+	if (PlayerEmote_EmoteCoolDown[plynum] < Timer() && !PlayerIsSpectator(plynum))
+	{
+		// Warn players who spammed too much to wait
+		if (PlayerEmote_AntiSpam[plynum] <= 0 && GetCVar("emotesystem_server_spammax") > 0)
+		{
+			NamedExecuteClientScript("DoomEmotes_NaughtyWarn_Client", plynum);
+			terminate;
+		}
+		
+		// Cooldown the next time a player can spam
+		PlayerEmote_EmoteCoolDown[plynum] = Timer() + (FixedMul(GetCVar("emotesystem_server_cooldowntime"), SECOND<<16)>>16);
+		PlayerEmote_SpamPunishTime[plynum] = Timer() + (FixedMul(GetCVar("emotesystem_server_spamregentime"), SECOND<<16)>>16);
+		PlayerEmote_AntiSpam[plynum]--;
+		
+		// Punish players who spammed too much
+		if (PlayerEmote_AntiSpam[plynum] == 0)
+			PlayerEmote_SpamPunishTime[plynum] = Timer() + (FixedMul(GetCVar("emotesystem_server_spampunishtime"), SECOND<<16)>>16);
+		
+		// Relay the received packet from the player to all clients
+		NamedSendNetworkString("DoomEmotes_DoEmote_Client", packet);
+	}
+}
+
+Script "DoomEmotes_DoEmote_Client" (int packet) NET CLIENTSIDE
+{
+	int plynum = GetChar(packet, 0)-1;
+	str emote = StrRight(packet, StrLen(packet)-1);
+	bool disabled = GetCVar("emotesystem_client_disabled");
+	bool nosound = GetCVar("emotesystem_client_disablesounds");
+	
+	// Stop here if the client doesn't want to see emotes
+	if (disabled)
+		terminate;
+	
+	// Spawn the emote on the emotee
+	SetActivatorToPlayer(plynum); 
+	Spawn(emote, GetActorX(0)+FixedMul(Cos(GetActorAngle(0)), -5.0), GetActorY(0)+FixedMul(Sin(GetActorAngle(0)), -5.0), GetActorZ(0)+35.0);
+	
+	// Squeak
+	if (!nosound)
+		PlaySound(0, Sound_FromEmote(emote));
+	
+}
+
+Script "DoomEmotes_NaughtyWarn_Client" (void) NET CLIENTSIDE
+{
+	Log(s:"Please wait a few more seconds before emoting again");
+}
+
+
+/*===================================================================================================
+                                          Useful Functions
+===================================================================================================*/
+
+function void ClearHUDMessages(void)
+{
+	HudMessage(s:""; HUDMSG_PLAIN, MSGID_TITLE, CR_WHITE, 0, 0, 0, 0);
+	HudMessage(s:""; HUDMSG_PLAIN, MSGID_PREVARROW, CR_WHITE, 0, 0, 0, 0);
+	HudMessage(s:""; HUDMSG_PLAIN, MSGID_NEXTARROW, CR_WHITE, 0, 0, 0, 0);
+	HudMessage(s:""; HUDMSG_PLAIN, MSGID_CHECKBOX2, CR_WHITE, 0, 0, 0, 0);
+	HudMessage(s:""; HUDMSG_PLAIN, MSGID_CHECKBOX1, CR_WHITE, 0, 0, 0, 0);
+	HudMessage(s:""; HUDMSG_PLAIN, MSGID_EMOTESELECT, CR_WHITE, 0, 0, 0, 0);
+	for (int i=0; i<9; i++)
+		HudMessage(s:""; HUDMSG_PLAIN, MSGID_EMOTE1-i, CR_WHITE, 0, 0, 0, 0);
+	HudMessage(s:""; HUDMSG_PLAIN, MSGID_BACKGROUND, CR_WHITE, 0, 0, 0, 0);
+	HudMessage(s:""; HUDMSG_PLAIN, MSGID_CURSOR, CR_WHITE, 0, 0, 0, 0);
+}
+
+function str Sound_FromEmote(str emote)
+{
+	// Find the emote with the given name in the list of registered emotes
+	for (int i=0; i<MAXEMOTES; i++)
+		if (!StrCmp(emote, Emotes_Registered[i][0]))
+			return Emotes_Registered[i][2];
+	return "";
+}
