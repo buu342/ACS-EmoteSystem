@@ -1,6 +1,6 @@
 # Emote System
 
-<img src=".github/Emote.gif" width="600" height="600"/>
+<img src=".github/Emote.gif" width="320" height="320"/><img src=".github/EmoteConfig.gif" width="320" height="320"/>
 
 Have you ever wanted to express yourself after getting spawn fragged, but typing something into chat is too much work?
 
@@ -22,7 +22,9 @@ Please submit an [issue](../../issues).
 
 Made by Buu342
 Original idea came from [this video](https://youtu.be/ceFUvxMyOe0?t=707) by GamingGargoyle. Thanks for the inspiration, and the wonderful video!
+
 Default emoji sprites from [Twemoji](https://github.com/twitter/twemoji)
+
 Default emoji sounds:
 * Angry emote - Made by CallHimBzar
 * Blush emote - Dog toy squeak
