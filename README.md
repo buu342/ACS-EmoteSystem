@@ -1,5 +1,7 @@
 # Emote System
 
+<img src=".github/Emote.gif" width="600" height="600"/>
+
 Have you ever wanted to express yourself after getting spawn fragged, but typing something into chat is too much work?
 
 Presenting the Emote System™ for multiplayer Doom (Zandronum)! With a single button, you open a menu, drag the mouse, and express yourself!
