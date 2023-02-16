@@ -1,9 +1,9 @@
 ACTOR EmoteBase
 {
-	+NOBLOCKMAP
-	+NOGRAVITY
-	+CLIENTSIDEONLY
-	-SOLID
-	Scale 0.1
-	VSpeed 7
+    +NOBLOCKMAP
+    +NOGRAVITY
+    +CLIENTSIDEONLY
+    -SOLID
+    Scale 0.1
+    VSpeed 7
 }

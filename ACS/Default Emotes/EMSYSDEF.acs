@@ -3,13 +3,13 @@
 
 Script "DoomEmotes_InitializeEmotesDefault" OPEN CLIENTSIDE
 {
-	ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_ThumbsUp", "EMTUA0", "Emote/ThumbsUp");
-	ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Blush", "EMBLA0", "Emote/Blush");
-	ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Tongue", "EMTGA0", "Emote/Tongue");
-	ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Eyebrow", "EMEBA0", "Emote/Eyebrow");
-	ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Angry", "EMAGA0", "Emote/Angry");
-	ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_ThumbsDown", "EMTDA0", "Emote/ThumbsDown");
-	ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Pensive", "EMPNA0", "Emote/Pensive");
-	ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Sobbing", "EMSBA0", "Emote/Sobbing");
-	ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_LULZ", "EMLUA0", "Emote/LULZ");
+    ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_ThumbsUp", "EMTUA0", "Emote/ThumbsUp");
+    ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Blush", "EMBLA0", "Emote/Blush");
+    ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Tongue", "EMTGA0", "Emote/Tongue");
+    ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Eyebrow", "EMEBA0", "Emote/Eyebrow");
+    ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Angry", "EMAGA0", "Emote/Angry");
+    ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_ThumbsDown", "EMTDA0", "Emote/ThumbsDown");
+    ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Pensive", "EMPNA0", "Emote/Pensive");
+    ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_Sobbing", "EMSBA0", "Emote/Sobbing");
+    ACS_NamedExecuteAlways("DoomEmotes_RegisterEmote", 0, "Emote_LULZ", "EMLUA0", "Emote/LULZ");
 }
