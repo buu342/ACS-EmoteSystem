@@ -168,10 +168,10 @@ Script 30735 (void) NET CLIENTSIDE
 		}
 		
 		// Get input
-		dx = FixedMul(x_sensitivity, GetPlayerInput(0, INPUT_YAW))/24;
-		dy = FixedMul(y_sensitivity, GetPlayerInput(0, INPUT_PITCH))/12;
+		dx = FixedMul(x_sensitivity, GetPlayerInput(-1, INPUT_YAW))/24;
+		dy = FixedMul(y_sensitivity, GetPlayerInput(-1, INPUT_PITCH))/12;
 		if (dy == 0)
-			dy = -GetPlayerInput(0, INPUT_FORWARDMOVE)/1200;
+			dy = -GetPlayerInput(-1, INPUT_FORWARDMOVE)/1200;
 
 		// Move the mouse
 		mouse_x -= dx;
@@ -448,10 +448,10 @@ Script 30737 (void) NET CLIENTSIDE
 		}
 		
 		// Get input
-		dx = FixedMul(x_sensitivity, GetPlayerInput(0, INPUT_YAW))/24;
-		dy = FixedMul(y_sensitivity, GetPlayerInput(0, INPUT_PITCH))/12;
+		dx = FixedMul(x_sensitivity, GetPlayerInput(-1, INPUT_YAW))/24;
+		dy = FixedMul(y_sensitivity, GetPlayerInput(-1, INPUT_PITCH))/12;
 		if (dy == 0)
-			dy = -GetPlayerInput(0, INPUT_FORWARDMOVE)/1200;
+			dy = -GetPlayerInput(-1, INPUT_FORWARDMOVE)/1200;
 
 		// Move the mouse
 		mouse_x -= dx;
