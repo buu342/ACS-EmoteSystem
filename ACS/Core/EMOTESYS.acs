@@ -191,7 +191,19 @@ Script 30735 (void) NET CLIENTSIDE
             mouse_y = GetScreenHeight();
         
         // Draw the mouse cursor
-        SetFont("DOOMCURS");
+        if (GetCvarString("vid_cursor") == "cursor")
+			SetFont("CURSOR");
+		else if (GetCvarString("vid_cursor") == "chexcurs")
+			SetFont("CHEXCURS");
+		else if (GetCvarString("vid_cursor") == "herecurs")
+			SetFont("HERECURS");
+		else if (GetCvarString("vid_cursor") == "hexncurs")
+			SetFont("HEXNCURS");
+		else if (GetCvarString("vid_cursor") == "strfcurs")
+			SetFont("STRFCURS");
+		else
+			SetFont("DOOMCURS");
+		
         SetHUDSize(GetScreenWidth(), GetScreenHeight(), true);
         HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_CURSOR, CR_WHITE, (mouse_x << 16)+0.1, (mouse_y << 16)+0.1, 1, 1);
         
@@ -471,7 +483,19 @@ Script 30737 (void) NET CLIENTSIDE
             mouse_y = GetScreenHeight();
         
         // Draw the mouse cursor
-        SetFont("DOOMCURS");
+        if (GetCvarString("vid_cursor") == "cursor")
+			SetFont("CURSOR");
+		else if (GetCvarString("vid_cursor") == "chexcurs")
+			SetFont("CHEXCURS");
+		else if (GetCvarString("vid_cursor") == "herecurs")
+			SetFont("HERECURS");
+		else if (GetCvarString("vid_cursor") == "hexncurs")
+			SetFont("HEXNCURS");
+		else if (GetCvarString("vid_cursor") == "strfcurs")
+			SetFont("STRFCURS");
+		else
+			SetFont("DOOMCURS");
+		
         SetHUDSize(GetScreenWidth(), GetScreenHeight(), true);
         HudMessage(s:"A"; HUDMSG_PLAIN, MSGID_CURSOR, CR_WHITE, (mouse_x << 16)+0.1, (mouse_y << 16)+0.1, 1, 1);
         
